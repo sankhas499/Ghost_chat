@@ -103,3 +103,56 @@ button:hover { background: var(--accent-hover); }
 #input-area button { margin: 0; width: auto; padding: 0 20px; }
 
 .recording { color: var(--danger) !important; border-color: var(--danger) !important; }
+/* --- THEME DEFINITIONS --- */
+/* Midnight Theme (Deep Blue/Black) */
+[data-theme="midnight"] {
+    --bg-color: #020617;
+    --box-bg: #0f172a;
+    --border-color: #1e293b;
+    --text-main: #e2e8f0;
+    --accent: #3b82f6;
+    --accent-hover: #2563eb;
+    --msg-sent: #1e3a8a;
+    --msg-recv: #1e293b;
+}
+
+/* Rainy Theme (Grey/Blueish Dark) */
+[data-theme="rainy"] {
+    --bg-color: #1e2329;
+    --box-bg: #2b323b;
+    --border-color: #3f4752;
+    --text-main: #d1d5db;
+    --accent: #4b5563;
+    --accent-hover: #374151;
+    --msg-sent: #374151;
+    --msg-recv: #2b323b;
+}
+
+/* Light Theme (Clean Professional) */
+[data-theme="light"] {
+    --bg-color: #f3f4f6;
+    --box-bg: #ffffff;
+    --border-color: #d1d5db;
+    --text-main: #111827;
+    --accent: #111827;
+    --accent-hover: #374151;
+    --msg-sent: #e5e7eb;
+    --msg-recv: #ffffff;
+}
+
+/* --- TRASH BIN STYLES --- */
+.recent-key {
+    display: flex;
+    justify-content: space-between;
+    background: var(--bg-color);
+    padding: 10px;
+    margin: 6px 0;
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+    cursor: pointer;
+    transition: border 0.2s;
+}
+
+.recent-key:hover {
+    border-color: var(--accent);
+}
