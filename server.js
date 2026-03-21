@@ -1,19 +1,26 @@
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
+const path = require('path'); // Added for path safety
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, { maxHttpBufferSize: 1e8 });
+const io = new Server(server, { 
+    maxHttpBufferSize: 1e8,
+    cors: { origin: "*" } // Added for connection stability
+});
 
-// THE REGISTRY: Stores valid room keys and their creation time
 const activeRooms = new Map();
 
-app.use(express.static('public'));
+// Strict folder serving
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Safety Route: If someone goes to a weird URL, send them back to the portal
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
 io.on('connection', (socket) => {
-    
-    // 1. CREATE ROOM: Host registers a real key
     socket.on('create_room', (room) => {
         if (!activeRooms.has(room)) {
             activeRooms.set(room, Date.now());
@@ -22,19 +29,16 @@ io.on('connection', (socket) => {
         socket.join(room);
     });
 
-    // 2. JOIN ROOM: Server checks if the key is real
     socket.on('join_attempt', (room) => {
         if (activeRooms.has(room)) {
             socket.join(room);
             socket.emit('join_success', room);
-            socket.to(room).emit('peer_ready'); // Tell host someone joined
+            socket.to(room).emit('peer_ready');
         } else {
-            // Reject invalid/random keys
             socket.emit('join_error', "invalid output");
         }
     });
 
-    // Routing chat & files ONLY if the room is valid
     socket.on('encrypted_message', (data) => {
         if (data.room && activeRooms.has(data.room)) {
             socket.to(data.room).emit('encrypted_message', data.payload);
@@ -48,20 +52,19 @@ io.on('connection', (socket) => {
     });
 });
 
-// 3. AUTO-DESTRUCT: 48-Hour Garbage Collector
 setInterval(() => {
     const now = Date.now();
     const FORTY_EIGHT_HOURS = 48 * 60 * 60 * 1000;
-    
     for (const [room, createdTime] of activeRooms.entries()) {
         if (now - createdTime > FORTY_EIGHT_HOURS) {
             activeRooms.delete(room);
-            console.log(`Room Self-Destructed (48H): ${room}`);
         }
     }
-}, 3600000); // Scans the registry every 1 hour
+}, 3600000);
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-    console.log(`\x1b[32m%s\x1b[0m`, `>>> Ghost-chat Secure Engine Live: http://localhost:${PORT}`);
+
+// THE CRITICAL FIX: Explicitly bind to 0.0.0.0 for cloud deployment
+server.listen(PORT, '0.0.0.0', () => {
+    console.log(`>>> Ghost-chat Live on Port: ${PORT}`);
 });
