@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ghost-chat | Secure Portal</title>
+    <style>
+        :root { --bg: #0f0f11; --panel: #1a1a1e; --text: #e0e0e0; --muted: #888; --accent: #2b6cb0; --border: #2a2a2e; --msg-rx: #2d3748; --danger: #c53030; }
+        [data-theme="midnight"] { --bg: #0a0e17; --panel: #111827; --accent: #3b82f6; }
+        [data-theme="rainy"] { --bg: #1e293b; --panel: #0f172a; --accent: #0ea5e9; }
+        [data-theme="light"] { --bg: #f3f4f6; --panel: #ffffff; --text: #1f2937; --muted: #6b7280; --accent: #2563eb; --border: #e5e7eb; --msg-rx: #e5e7eb; }
+
+        body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: -apple-system, system-ui, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
+        .container { width: 95%; max-width: 850px; height: 85vh; background: var(--panel); border-radius: 12px; display: flex; flex-direction: column; border: 1px solid var(--border); box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+
+        #lobby { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 20px; text-align: center; overflow-y: auto; }
+        .action-card { background: var(--bg); padding: 20px; border-radius: 8px; border: 1px solid var(--border); width: 100%; max-width: 320px; margin-bottom: 15px; }
+        
+        #chat { display: none; flex-direction: column; height: 100%; }
+        .header { padding: 10px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .chat-messages { flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+        .message { max-width: 75%; padding: 10px 15px; border-radius: 8px; font-size: 0.95rem; word-wrap: break-word; }
+        .message.sent { background: var(--accent); align-self: flex-end; color: white; }
+        .message.received { background: var(--msg-rx); align-self: flex-start; }
+
+        .btn { padding: 12px 20px; border-radius: 6px; cursor: pointer; border: none; font-weight: 600; font-size: 0.9rem; transition: 0.2s; }
+        .btn-p { background: var(--accent); color: white; }
+        .btn-p:hover { opacity: 0.9; transform: translateY(-1px); }
+        
+        input { background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 12px; border-radius: 6px; outline: none; margin-bottom: 10px; }
+
+        .input-area { padding: 15px; border-top: 1px solid var(--border); display: flex; gap: 10px; align-items: center; }
+        .btn-icon { background: none; border: none; font-size: 1.3rem; color: var(--muted); cursor: pointer; }
+        .btn-icon.recording { color: var(--danger); }
+
+        .prog { width: 100%; height: 4px; background: #333; display: none; }
+        .prog-bar { height: 100%; background: var(--accent); width: 0%; }
+        
+        /* List Item Styling (Recent & Trash) */
+        .list-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; margin-top: 8px; font-size: 0.85rem; transition: border-color 0.2s; cursor: pointer; }
+        .list-item:hover { border-color: var(--accent); }
+        .item-actions { display: flex; gap: 8px; align-items: center; }
+        .small-btn { background: transparent; border: none; color: var(--muted); cursor: pointer; font-size: 1rem; padding: 0 4px; transition: color 0.2s; }
+        .small-btn:hover { color: var(--danger); }
+        .recover-btn:hover { color: #22c55e; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="lobby">
+        <h1 style="margin:0; font-size: 2.5rem;">Ghost-chat</h1>
+        <p style="color:var(--muted); margin-bottom: 30px;">E2EE P2P Secure Portal</p>
+        
+        <div class="action-card">
+            <button class="btn btn-p" style="width:100%" onclick="createNewRoom()">+ Create New Room</button>
+        </div>
+        
+        <div style="color:var(--muted); margin: 5px;">OR</div>
+        
+        <div class="action-card">
+            <input type="password" id="joinIn" style="width:100%; box-sizing:border-box" placeholder="Paste Secret Key...">
+            <button class="btn btn-p" style="width:100%" onclick="joinExistingRoom()">Join Secure Room</button>
+        </div>
+
+        <div style="width:100%; max-width:320px; text-align:left; margin-top: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <small style="color:var(--muted); letter-spacing: 1px;">RECENT (48H)</small>
+                <button class="small-btn" onclick="toggleTrash()" title="Open Trash Bin">🗑️</button>
+            </div>
+            <div id="recentList"></div>
+
+            <div id="trashSection" style="display: none; margin-top: 15px; padding-top: 15px; border-top: 1px dashed var(--border);">
+                <small style="color:var(--danger); letter-spacing: 1px;">TRASH BIN</small>
+                <div id="trashList"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="chat">
+        <div class="header">
+            <button class="btn" style="background:none; color:var(--text)" onclick="location.reload()">← Leave</button>
+            <div style="display:flex; gap:10px">
+                <button class="btn" style="border:1px dashed var(--accent); color:var(--accent); background:none" id="cpBtn" onclick="copyK()">Copy Key</button>
+                <select class="btn" onchange="document.body.setAttribute('data-theme', this.value)" style="background:var(--bg); color:var(--text); border: 1px solid var(--border)">
+                    <option value="dark">Dark</option>
+                    <option value="rainy">Rainy</option>
+                    <option value="midnight">Midnight</option>
+                    <option value="light">Light</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="chat-messages" id="msgs"></div>
+        <div class="prog" id="pBox"><div class="prog-bar" id="pBar"></div></div>
+        
+        <div class="input-area">
+            <input type="file" id="fIn" style="display:none" onchange="handleFile(event)">
+            <button class="btn-icon" onclick="document.getElementById('fIn').click()">📎</button>
+            <button class="btn-icon" id="mic" onclick="toggleMic()">🎤</button>
+            <input type="text" id="mIn" placeholder="Encrypted message..." style="flex-grow:1; margin-bottom: 0;" autocomplete="off">
+            <button class="btn btn-p" onclick="sendText()">Send</button>
+        </div>
+    </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    const socket = io();
+    let roomKey = "", pc, dc;
+
+    // --- SETUP & UI ---
+    function genKey() { return Math.random().toString(36).substring(2, 15); }
+    function copyK() { navigator.clipboard.writeText(roomKey); document.getElementById('cpBtn').textContent="Copied!"; setTimeout(()=>document.getElementById('cpBtn').textContent="Copy Key",2000); }
+    function renderMsg(h, t) { const d=document.createElement('div'); d.className=`message ${t}`; d.innerHTML=h; document.getElementById('msgs').appendChild(d); document.getElementById('msgs').scrollTop=99999; }
+
+    function showChat() {
+        document.getElementById('lobby').style.display = 'none';
+        document.getElementById('chat').style.display = 'flex';
+    }
+
+    // --- HOSTING A ROOM ---
+    function createNewRoom() {
+        roomKey = genKey();
+        updateRecent(roomKey);
+        socket.emit('create_room', roomKey); 
+        showChat();
+        initPC();
+    }
+
+    // --- JOINING A ROOM ---
+    function joinExistingRoom(keyOverride) {
+        const k = keyOverride || document.getElementById('joinIn').value.trim();
+        if(!k) return alert("Enter a key!");
+        socket.emit('join_attempt', k); 
+    }
+
+    socket.on('join_success', (k) => {
+        roomKey = k;
+        updateRecent(k);
+        showChat();
+        initPC();
+    });
+
+    socket.on('join_error', (msg) => { alert(msg); });
+
+    // --- LOCAL STORAGE MANAGER (Recent & Trash) ---
+    function getStore(name) { return JSON.parse(localStorage.getItem(name) || '[]'); }
+    function setStore(name, data) { localStorage.setItem(name, JSON.stringify(data)); }
+
+    function updateRecent(k) {
+        let r = getStore('ghost_r').filter(x => x.k !== k);
+        r.unshift({k, t: Date.now()});
+        setStore('ghost_r', r.slice(0,5)); // Keep top 5
+        renderLists();
+    }
+
+    function deleteToTrash(event, k) {
+        event.stopPropagation(); // Stops the row click from triggering "Join Room"
+        let r = getStore('ghost_r');
+        let item = r.find(x => x.k === k);
+        if (item) {
+            setStore('ghost_r', r.filter(x => x.k !== k));
+            let t = getStore('ghost_trash');
+            t.unshift(item);
+            setStore('ghost_trash', t.slice(0,10)); // Keep up to 10 in trash
+            renderLists();
+        }
+    }
+
+    function recoverFromTrash(event, k) {
+        event.stopPropagation();
+        let t = getStore('ghost_trash');
+        let item = t.find(x => x.k === k);
+        if (item) {
+            setStore('ghost_trash', t.filter(x => x.k !== k));
+            let r = getStore('ghost_r');
+            r.unshift(item);
+            setStore('ghost_r', r.slice(0,5));
+            renderLists();
+        }
+    }
+
+    function hardDelete(event, k) {
+        event.stopPropagation();
+        let t = getStore('ghost_trash');
+        setStore('ghost_trash', t.filter(x => x.k !== k));
+        renderLists();
+    }
+
+    function toggleTrash() {
+        const sec = document.getElementById('trashSection');
+        sec.style.display = sec.style.display === 'none' ? 'block' : 'none';
+    }
+
+    function renderLists() {
+        const now = Date.now();
+        
+        // Clean up expired rooms automatically (48h limit locally too)
+        let r = getStore('ghost_r').filter(x => (now - x.t) < 172800000);
+        let t = getStore('ghost_trash').filter(x => (now - x.t) < 172800000);
+        setStore('ghost_r', r);
+        setStore('ghost_trash', t);
+
+        // Render Recent List
+        document.getElementById('recentList').innerHTML = r.map(x => `
+            <div class="list-item" onclick="joinExistingRoom('${x.k}')">
+                <span>${x.k.substring(0,8)}...</span>
+                <div class="item-actions">
+                    <span style="color:var(--muted)">${new Date(x.t).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span>
+                    <button class="small-btn" onclick="deleteToTrash(event, '${x.k}')" title="Move to Trash">✖</button>
+                </div>
+            </div>
+        `).join('') || '<div style="color:var(--muted); font-size:0.8rem; margin-top:10px; text-align:center">No recent rooms</div>';
+
+        // Render Trash List
+        document.getElementById('trashList').innerHTML = t.map(x => `
+            <div class="list-item" style="border-color: #555; opacity: 0.8;">
+                <span style="text-decoration: line-through; color: var(--muted)">${x.k.substring(0,8)}...</span>
+                <div class="item-actions">
+                    <button class="small-btn recover-btn" onclick="recoverFromTrash(event, '${x.k}')" title="Recover Room">♻️</button>
+                    <button class="small-btn" onclick="hardDelete(event, '${x.k}')" title="Delete Permanently">🔥</button>
+                </div>
+            </div>
+        `).join('') || '<div style="color:var(--muted); font-size:0.8rem; margin-top:10px; text-align:center">Trash is empty</div>';
+    }
+
+    // Initialize lists on load
+    renderLists();
+
+    // --- CRYPTO ENGINE ---
+    async function getK() {
+        const enc=new TextEncoder();
+        const m=await crypto.subtle.importKey("raw",enc.encode(roomKey),"PBKDF2",false,["deriveKey"]);
+        return crypto.subtle.deriveKey({name:"PBKDF2", salt:enc.encode("ghost_salt"), iterations:100000, hash:"SHA-256"},m,{name:"AES-GCM", length:256},false,["encrypt","decrypt"]);
+    }
+    async function encMsg(t) {
+        const key=await getK(); const iv=crypto.getRandomValues(new Uint8Array(12));
+        const c=await crypto.subtle.encrypt({name:"AES-GCM",iv},key,new TextEncoder().encode(t));
+        return JSON.stringify({iv:Array.from(iv), d:Array.from(new Uint8Array(c))});
+    }
+    async function decMsg(j) {
+        try {
+            const {iv, d}=JSON.parse(j); const key=await getK();
+            const r=await crypto.subtle.decrypt({name:"AES-GCM",iv:new Uint8Array(iv)},key,new Uint8Array(d));
+            return new TextDecoder().decode(r);
+        } catch(e) { return null; }
+    }
+
+    // --- WebRTC (P2P) ---
+    function initPC() {
+        pc = new RTCPeerConnection({ iceServers: [{ urls: "stun:stun.l.google.com:19302" }] });
+        pc.onicecandidate = e => e.candidate && socket.emit('webrtc_signal', {room: roomKey, signal: {type:'candidate', candidate: e.candidate}});
+        pc.ondatachannel = e => { dc = e.channel; setupDC(); };
+    }
+
+    socket.on('peer_ready', async () => {
+        dc = pc.createDataChannel("fileTransfer"); setupDC();
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        socket.emit('webrtc_signal', {room: roomKey, signal: {type:'offer', sdp: offer}});
+    });
+
+    socket.on('webrtc_signal', async (sig) => {
+        if (sig.type === 'offer') {
+            await pc.setRemoteDescription(new RTCSessionDescription(sig.sdp));
+            const ans = await pc.createAnswer();
+            await pc.setLocalDescription(ans);
+            socket.emit('webrtc_signal', {room: roomKey, signal: {type:'answer', sdp: ans}});
+        } else if (sig.type === 'answer') {
+            await pc.setRemoteDescription(new RTCSessionDescription(sig.sdp));
+        } else if (sig.type === 'candidate') {
+            await pc.addIceCandidate(new RTCIceCandidate(sig.candidate));
+        }
+    });
+
+    let chunks = [], rxS = 0, totalS = 0;
+    function setupDC() {
+        dc.onmessage = e => {
+            if (typeof e.data === 'string') {
+                const m = JSON.parse(e.data);
+                if(m.t==='start') { chunks=[]; rxS=0; totalS=m.s; document.getElementById('pBox').style.display='block'; }
+            } else {
+                chunks.push(e.data); rxS += e.data.byteLength;
+                document.getElementById('pBar').style.width = (rxS/totalS*100)+'%';
+                if(rxS >= totalS) {
+                    const blob = new Blob(chunks);
+                    renderMsg(`<a href="${URL.createObjectURL(blob)}" download="file" style="color:var(--accent); font-weight:bold;">📁 Download Received File</a>`, 'received');
+                    document.getElementById('pBox').style.display='none';
+                }
+            }
+        };
+    }
+
+    // --- MESSAGING ---
+    document.getElementById('mIn').addEventListener("keydown", function(e) { if(e.key === "Enter") sendText(); });
+
+    async function sendText() {
+        const v=document.getElementById('mIn').value.trim(); if(!v) return;
+        renderMsg(v, 'sent');
+        const p = await encMsg(JSON.stringify({type:'text', val: v}));
+        socket.emit('encrypted_message', {room: roomKey, payload: p});
+        document.getElementById('mIn').value='';
+    }
+
+    socket.on('encrypted_message', async (p) => {
+        const d = await decMsg(p); if(!d) return;
+        const data = JSON.parse(d);
+        if(data.type==='text') renderMsg(data.val, 'received');
+        if(data.type==='audio') renderMsg(`<audio controls src="${data.val}"></audio>`, 'received');
+    });
+
+    async function handleFile(e) {
+        const f=e.target.files[0]; if(!f || !dc || dc.readyState!=='open') return alert("P2P connection not ready for large files.");
+        dc.send(JSON.stringify({t:'start', s: f.size}));
+        document.getElementById('pBox').style.display='block';
+        const stream = f.stream().getReader(); let sent = 0;
+        while(true) {
+            const {done, value} = await stream.read(); if(done) break;
+            for(let i=0; i<value.byteLength; i+=16384) {
+                const c = value.slice(i, i+16384);
+                while(dc.bufferedAmount > 1000000) await new Promise(r => setTimeout(r, 50));
+                dc.send(c); sent += c.byteLength;
+                document.getElementById('pBar').style.width = (sent/f.size*100)+'%';
+            }
+        }
+        document.getElementById('pBox').style.display='none'; renderMsg(`Sent File: ${f.name}`, 'sent');
+    }
+
+    let recorder;
+    async function toggleMic() {
+        const btn = document.getElementById('mic');
+        if(!recorder) {
+            const s = await navigator.mediaDevices.getUserMedia({audio:true});
+            recorder = new MediaRecorder(s); let a = [];
+            recorder.ondataavailable = e => a.push(e.data);
+            recorder.onstop = async () => {
+                const r = new FileReader(); r.readAsDataURL(new Blob(a));
+                r.onloadend = async () => {
+                    const p = await encMsg(JSON.stringify({type:'audio', val: r.result}));
+                    socket.emit('encrypted_message', {room: roomKey, payload: p});
+                    renderMsg(`<audio controls src="${r.result}"></audio>`, 'sent');
+                };
+            };
+            recorder.start(); btn.classList.add('recording');
+        } else {
+            recorder.stop(); recorder.stream.getTracks().forEach(t=>t.stop()); recorder=null; btn.classList.remove('recording');
+        }
+    }
+</script>
+</body>
+</html>
