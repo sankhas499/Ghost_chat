@@ -201,3 +201,55 @@ function sendFile(file) {
         renderMsg(`Sent file: ${file.name}`, 'sent');
     };
 }
+// --- 7. THEMES & TRASH BIN LOGIC ---
+
+// Theme Manager
+function changeTheme(theme) {
+    document.body.setAttribute('data-theme', theme);
+    localStorage.setItem('ghost_theme', theme);
+}
+
+// Load saved theme on startup
+const savedTheme = localStorage.getItem('ghost_theme') || 'dark';
+document.body.setAttribute('data-theme', savedTheme);
+document.getElementById('themeDropdown').value = savedTheme;
+
+// Trash Bin Manager
+function saveKeyToTrash(key) {
+    let keys = JSON.parse(localStorage.getItem('ghost_keys') || '[]');
+    // Remove if it already exists so we don't get duplicates
+    keys = keys.filter(k => k !== key);
+    keys.unshift(key); // Add to the top of the list
+    if (keys.length > 5) keys.pop(); // Only keep the last 5 rooms
+    localStorage.setItem('ghost_keys', JSON.stringify(keys));
+    renderTrashBin();
+}
+
+function renderTrashBin() {
+    let keys = JSON.parse(localStorage.getItem('ghost_keys') || '[]');
+    const bin = document.getElementById('trashBin');
+    const list = document.getElementById('recentKeysList');
+    
+    if (keys.length === 0) {
+        bin.style.display = 'none';
+        return;
+    }
+    
+    bin.style.display = 'block';
+    list.innerHTML = '';
+    
+    keys.forEach(k => {
+        const el = document.createElement('div');
+        el.className = 'recent-key';
+        // Show just the first 8 characters of the key for security
+        el.innerHTML = `<span style="font-family: monospace;">🔑 ${k.substring(0,8)}...</span> <span style="font-size:0.8em; color: var(--accent);">Join ➔</span>`;
+        el.onclick = () => {
+            document.getElementById('joinIn').value = k;
+            joinExistingRoom();
+        };
+        list.appendChild(el);
+    });
+}
+
+// Render the bin when the page loads
+renderTrashBin();
