@@ -56,6 +56,7 @@ function renderMsg(htmlContent, type) {
 
 async function createNewRoom() {
     roomKey = await genKey();
+    saveKeyToTrash(roomKey); // Saves to Recycle Bin
     socket.emit('create_room', roomKey); 
     showChat(roomKey);
     initPC();
@@ -69,6 +70,7 @@ function joinExistingRoom() {
 
 socket.on('join_success', (k) => {
     roomKey = k;
+    saveKeyToTrash(roomKey); // Saves to Recycle Bin
     showChat(k);
     initPC();
 });
@@ -201,6 +203,7 @@ function sendFile(file) {
         renderMsg(`Sent file: ${file.name}`, 'sent');
     };
 }
+
 // --- 7. THEMES & TRASH BIN LOGIC ---
 
 // Theme Manager
@@ -212,7 +215,11 @@ function changeTheme(theme) {
 // Load saved theme on startup
 const savedTheme = localStorage.getItem('ghost_theme') || 'dark';
 document.body.setAttribute('data-theme', savedTheme);
-document.getElementById('themeDropdown').value = savedTheme;
+// Check if element exists before setting value (prevents error if called before DOM loads)
+window.addEventListener('DOMContentLoaded', () => {
+    const themeDropdown = document.getElementById('themeDropdown');
+    if(themeDropdown) themeDropdown.value = savedTheme;
+});
 
 // Trash Bin Manager
 function saveKeyToTrash(key) {
@@ -230,6 +237,9 @@ function renderTrashBin() {
     const bin = document.getElementById('trashBin');
     const list = document.getElementById('recentKeysList');
     
+    // Safety check in case DOM isn't fully loaded
+    if (!bin || !list) return;
+
     if (keys.length === 0) {
         bin.style.display = 'none';
         return;
@@ -251,5 +261,5 @@ function renderTrashBin() {
     });
 }
 
-// Render the bin when the page loads
-renderTrashBin();
+// Render the bin when the DOM is ready
+window.addEventListener('DOMContentLoaded', renderTrashBin);
