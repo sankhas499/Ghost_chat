@@ -1,23 +1,24 @@
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
-const path = require('path'); // Added for path safety
+const path = require('path'); // The GPS for your files
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, { 
     maxHttpBufferSize: 1e8,
-    cors: { origin: "*" } // Added for connection stability
+    cors: { origin: "*" } 
 });
 
 const activeRooms = new Map();
 
-// Strict folder serving
-app.use(express.static(path.join(__dirname, 'public')));
+// --- THE FIX: Tell the server exactly where the 'public' folder is ---
+const publicPath = path.join(__dirname, 'public');
+app.use(express.static(publicPath));
 
-// Safety Route: If someone goes to a weird URL, send them back to the portal
-app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+// Safety Route: If the server is confused, manually point it to index.html
+app.get('/', (req, res) => {
+    res.sendFile(path.join(publicPath, 'index.html'));
 });
 
 io.on('connection', (socket) => {
@@ -54,17 +55,15 @@ io.on('connection', (socket) => {
 
 setInterval(() => {
     const now = Date.now();
-    const FORTY_EIGHT_HOURS = 48 * 60 * 60 * 1000;
+    const expiry = 48 * 60 * 60 * 1000;
     for (const [room, createdTime] of activeRooms.entries()) {
-        if (now - createdTime > FORTY_EIGHT_HOURS) {
-            activeRooms.delete(room);
-        }
+        if (now - createdTime > expiry) activeRooms.delete(room);
     }
 }, 3600000);
 
 const PORT = process.env.PORT || 3000;
 
-// THE CRITICAL FIX: Explicitly bind to 0.0.0.0 for cloud deployment
+// Force the server to listen to '0.0.0.0' so Render can find it
 server.listen(PORT, '0.0.0.0', () => {
-    console.log(`>>> Ghost-chat Live on Port: ${PORT}`);
+    console.log(`>>> Ghost-chat Secure Engine Live on port ${PORT}`);
 });
