@@ -1,0 +1,105 @@
+/* Clean, flat dark theme. No neon. */
+:root {
+    --bg-color: #0d0d0d;
+    --box-bg: #1a1a1a;
+    --border-color: #2a2a2a;
+    --text-main: #f0f0f0;
+    --accent: #333333;
+    --accent-hover: #444444;
+    --msg-sent: #202020;
+    --msg-recv: #151515;
+    --danger: #ff4444;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-main);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+#lobby, #chat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    width: 100%;
+}
+
+#chat { display: none; justify-content: flex-end; }
+
+.box {
+    background: var(--box-bg);
+    padding: 40px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    text-align: center;
+    width: 100%;
+    max-width: 400px;
+}
+
+h2 { margin-top: 0; font-weight: 500; letter-spacing: 1px; }
+
+input, button {
+    padding: 12px;
+    margin: 8px 0;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background: var(--bg-color);
+    color: var(--text-main);
+    width: 100%;
+    box-sizing: border-box;
+    outline: none;
+}
+
+button {
+    cursor: pointer;
+    background: var(--accent);
+    font-weight: bold;
+    transition: background 0.2s;
+}
+
+button:hover { background: var(--accent-hover); }
+
+#messages {
+    flex-grow: 1;
+    width: 100%;
+    max-width: 800px;
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+}
+
+.msg {
+    padding: 10px 14px;
+    margin: 5px 0;
+    border-radius: 6px;
+    max-width: 75%;
+    word-wrap: break-word;
+    border: 1px solid var(--border-color);
+}
+
+.sent { background-color: var(--msg-sent); align-self: flex-end; }
+.received { background-color: var(--msg-recv); align-self: flex-start; }
+
+#input-area {
+    display: flex;
+    width: 100%;
+    max-width: 800px;
+    padding: 15px;
+    background: var(--box-bg);
+    border-top: 1px solid var(--border-color);
+    box-sizing: border-box;
+    gap: 10px;
+}
+
+#input-area input[type="text"] { margin: 0; flex-grow: 1; }
+#input-area button { margin: 0; width: auto; padding: 0 20px; }
+
+.recording { color: var(--danger) !important; border-color: var(--danger) !important; }
