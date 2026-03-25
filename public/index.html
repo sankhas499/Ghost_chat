@@ -3,34 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ghost-chat</title>
+    <title>Ghost-chat | Secure Portal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <div id="lobby">
-        <div class="box">
-            <h2>Ghost-chat</h2>
-            <button onclick="createNewRoom()">Create Secure Room</button>
-            <div style="margin: 20px 0; color: #666;">--- OR ---</div>
-            <input type="text" id="joinIn" placeholder="Enter Room Key">
-            <button onclick="joinExistingRoom()">Join Room</button>
+    <div class="ambient-glow bg-blue"></div>
+    <div class="ambient-glow bg-purple"></div>
+
+    <div class="theme-wrapper">
+        <select id="themeDropdown" onchange="changeTheme(this.value)">
+            <option value="dark">Dark Glass</option>
+            <option value="midnight">Midnight</option>
+            <option value="rainy">Rainy</option>
+        </select>
+    </div>
+
+    <div id="lobby" class="container">
+        <div class="glass-panel main-box">
+            <div class="logo">👻 Ghost-chat</div>
+            <p class="subtitle">E2EE P2P Communication Protocol</p>
+            
+            <button class="btn-primary" onclick="createNewRoom()">+ Create Secure Room</button>
+            
+            <div class="divider"><span>OR JOIN EXISTING</span></div>
+            
+            <input type="text" id="joinIn" class="input-modern" placeholder="Paste Room Key Here...">
+            <button class="btn-secondary" onclick="joinExistingRoom()">Join Room</button>
+            
+            <div id="trashBin" class="trash-bin" style="display: none;">
+                <div class="trash-header">♻️ Recent Sessions (Local)</div>
+                <div id="recentKeysList"></div>
+            </div>
         </div>
     </div>
 
-    <div id="chat">
-        <div style="background: var(--box-bg); width: 100%; text-align: center; padding: 10px; border-bottom: 1px solid var(--border-color); font-family: monospace;">
-            Room Key: <span id="currentKey" style="color: #888;"></span>
-        </div>
-        
-        <div id="messages"></div>
-        
-        <div id="input-area">
-            <input type="text" id="mIn" placeholder="Type an encrypted message..." onkeypress="if(event.key === 'Enter') sendText()">
-            <button onclick="sendText()">Send</button>
-            <button id="mic" onclick="toggleMic()">Mic</button>
-            <input type="file" id="fileIn" style="display:none" onchange="sendFile(this.files[0])">
-            <button onclick="document.getElementById('fileIn').click()">File</button>
+    <div id="chat" class="container" style="display: none;">
+        <div class="glass-panel chat-wrapper">
+            
+            <div class="chat-header">
+                <div class="status-dot"></div>
+                <div class="header-info">
+                    <span class="room-title">Encrypted Tunnel Active</span>
+                    <span class="room-key" id="currentKey"></span>
+                </div>
+            </div>
+            
+            <div id="messages" class="message-area"></div>
+            
+            <div id="input-area" class="input-bar">
+                <button id="mic" class="icon-btn" onclick="toggleMic()" title="Voice Note">🎤</button>
+                <input type="file" id="fileIn" style="display:none" onchange="sendFile(this.files[0])">
+                <button class="icon-btn" onclick="document.getElementById('fileIn').click()" title="Send File">📎</button>
+                
+                <input type="text" id="mIn" class="input-modern" placeholder="Type an encrypted message..." onkeypress="if(event.key === 'Enter') sendText()">
+                
+                <button class="btn-send" onclick="sendText()">Send ➔</button>
+            </div>
         </div>
     </div>
 
